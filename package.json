@@ -3,25 +3,17 @@
   "version": "1.0.0",
   "description": "A tiny javascript storage using indexedDB engine to store data in browser",
   "main": "dist/nano-storage.js",
-  "module": "dist/nano-storage.mjs",
-  "jsnext:main": "dist/nano-storage.mjs",
   "exports": {
     ".": {
       "production": {
-        "module": "./import-wrapper-prod.mjs",
-        "import": "./import-wrapper-prod.mjs",
         "require": "./dist/nano-storage.min.js",
         "default": "./dist/nano-storage.min.js"
       },
       "development": {
-        "module": "./import-wrapper.mjs",
-        "import": "./import-wrapper.mjs",
         "require": "./dist/nano-storage.js",
         "default": "./dist/nano-storage.js"
       },
       "default": {
-        "module": "./import-wrapper.mjs",
-        "import": "./import-wrapper.mjs",
         "require": "./dist/nano-storage.js",
         "default": "./dist/nano-storage.js"
       }
