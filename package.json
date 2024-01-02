@@ -1,7 +1,7 @@
 {
   "name": "NanoStorage",
   "version": "1.0",
-  "description": "A Minimalistic Wrapper for IndexedDB",
+  "description": "A tiny javascript storage using indexedDB engine to store data in browser",
   "main": "dist/nano-storage.js",
   "module": "dist/nano-storage.mjs",
   "jsnext:main": "dist/nano-storage.mjs",
