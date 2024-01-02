@@ -1,6 +1,6 @@
 {
   "name": "NanoStorage",
-  "version": "1.0",
+  "version": "1.0.0",
   "description": "A tiny javascript storage using indexedDB engine to store data in browser",
   "main": "dist/nano-storage.js",
   "module": "dist/nano-storage.mjs",
@@ -62,5 +62,6 @@
   },
   "homepage": "https://nanoblocktech.com",
   "devDependencies": {
+    "glob": "^8.0.3",
   }
 }
