@@ -15,7 +15,7 @@ With `NanoStorage` we can easily switch to and flow between `Dexie` and `NanoSto
         name,
         age`,
     });
-    db.friends.put( id: 1, name: "Peter", age: 21 });
+    db.friends.put( {id: 1, name: "Peter", age: 21 });
 ```
 
 ##### NanoStorage
@@ -27,5 +27,5 @@ With `NanoStorage` we can easily switch to and flow between `Dexie` and `NanoSto
         name,
         age`,
     });
-    db.friends.put( id: 1, name: "Peter", age: 21 });
+    db.friends.put( {id: 1, name: "Peter", age: 21 });
 ```
