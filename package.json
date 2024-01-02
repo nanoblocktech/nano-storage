@@ -1,0 +1,66 @@
+{
+  "name": "NanoStorage",
+  "version": "1.0",
+  "description": "A Minimalistic Wrapper for IndexedDB",
+  "main": "dist/nano-storage.js",
+  "module": "dist/nano-storage.mjs",
+  "jsnext:main": "dist/nano-storage.mjs",
+  "exports": {
+    ".": {
+      "production": {
+        "module": "./import-wrapper-prod.mjs",
+        "import": "./import-wrapper-prod.mjs",
+        "require": "./dist/nano-storage.min.js",
+        "default": "./dist/nano-storage.min.js"
+      },
+      "development": {
+        "module": "./import-wrapper.mjs",
+        "import": "./import-wrapper.mjs",
+        "require": "./dist/nano-storage.js",
+        "default": "./dist/nano-storage.js"
+      },
+      "default": {
+        "module": "./import-wrapper.mjs",
+        "import": "./import-wrapper.mjs",
+        "require": "./dist/nano-storage.js",
+        "default": "./dist/nano-storage.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nanoblocktech/nano-storage.js.git"
+  },
+  "keywords": [
+    "indexeddb",
+    "browser",
+    "database"
+  ],
+  "author": "Peter Ujah <https://github.com/peterujah>",
+  "contributors": [
+    "Nonoblock Technology <https://github.com/nanoblocktech>"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nanoblocktech/nano-storage.js/issues"
+  },
+  "scripts": {
+    "build": "just-build",
+    "watch": "just-build --watch",
+    "clean": "rm -rf tools/tmp && rm dist/*.js && rm dist/*.map && rm dist/*.ts && rm dist/*.mjs",
+  },
+  "just-build": {
+    "default": [
+      "# Build all targets (es5, es6 and test) and minify the default es5 UMD module",
+      "just-build release test"
+    ],
+    "gzip": [
+      "# Optionally gzip to find the size of the minified & gzipped version",
+      "gzip dist/nano-storage.min.js -k -f -9"
+    ]
+  },
+  "homepage": "https://nanoblocktech.com",
+  "devDependencies": {
+  }
+}
