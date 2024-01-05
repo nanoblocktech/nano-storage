@@ -17,6 +17,7 @@
     OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
     PERFORMANCE OF THIS SOFTWARE.
     ***************************************************************************** */
+
     var __assign = function() {
         __assign = Object.assign || function __assign(t) {
             for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -89,18 +90,18 @@
             
             if (usePromise) {
                 return new _global.Promise((resolve, reject) => {
-                    this.initializeOpen().then(() => {
+                    this._Open().then(() => {
                         resolve(this);
                     }).catch((error) => {
                         reject(error);
                     });
                 });
             } else {
-                return this.initializeOpen().then(() => this);
+                return this._Open().then(() => this);
             }
         }
 
-        async initializeOpen() {
+        async _Open() {
             if (this.isOpen()) {
                 return;
             }
@@ -165,7 +166,8 @@
                 };
 
                 deleteRequest.onerror = (event) => {
-                    reject(event.target.error);
+                    resolve(false);
+                    this.logError(event.target.error);
                 };
             });
         }
@@ -208,27 +210,30 @@
         async count(callback) {
             if (this.shouldProceed()) {
                 return this.instance.open(true)
-                    .then(() => this.privateCount(callback))
+                    .then(() => this._Count(callback))
                     .catch(error => {
                         this.throwError(error); 
                     });
             } else {
-                return this.databaseConnError();
+                return this.dbConError();
             }
         }
 
-        privateCount(callback) {
+        _Count(callback) {
             return new _global.Promise((resolve, reject) => {
-            if(this.findKey == null) {
-                    reject({
+                const isCallable = typeof callback !== 'undefined' && typeof callback === 'function';
+                let error = null;
+
+                if(this.findKey === null) {
+                    error = {
                         message: "Cache key cannot be empty " + this.findKey,
                         status: 0
-                    });
+                    };
                 }else {
                     const store = this.instance.getStore(this.baseTable, 'readonly');
-                    const isCallable = typeof callback !== 'undefined' && typeof callback === 'function';
+                   
                     if(store == null){
-                        reject(this.dbError());
+                        error = this.dbError();
                     }else{
                         let request = null;
                         if(this.column == null){
@@ -240,21 +245,29 @@
             
                         request.onsuccess = (event) => {
                             const count = event.target.result;
+                            resolve(count);
                             if(isCallable){
                                 callback(count);
                             }
-                            resolve(count);
                         };
             
                         request.onerror = (event) => {
+                            resolve(0);
                             if(isCallable){
                                 callback(0);
                             }
-                            reject(0);
+                            reject(event.target.error);
                         };
                     }
-        
-                    this.privateReset();
+                    this._Reset();
+                }
+
+                if(error !== null){
+                    resolve(0);
+                    if(isCallable){
+                        callback(0);
+                    }
+                    reject(error);
                 }
             });
         }
@@ -264,20 +277,23 @@
 
             if (this.shouldProceed()) {
                 return this.instance.open(true)
-                    .then(() => this.privateGet(object))
+                    .then(() => this._Get(object))
                     .catch(error => {
                         this.throwError(error); 
                     });
             } else {
-                return this.databaseConnError();
+                return this.dbConError();
             }
         }   
         
-        privateGet(object) {
+        _Get(object) {
             const store = this.instance.getStore(this.baseTable, 'readonly');
             let request = null;
+            let error = null;
 
-            if(store != null){
+            if(store === null){
+                error = this.dbError();
+            }else{
                 if (typeof object.key === 'undefined') {
                     const keys = Object.keys(object);
             
@@ -291,11 +307,10 @@
                     request = store.get(this.toKey(object.key));
                 }
             }
-            
-        
+ 
             return new _global.Promise((resolve, reject) => {
-                if(request == null){
-                    reject(this.dbError());
+                if(request === null){
+                    error = this.dbError();
                 }else{
                     request.onsuccess = (event) => {
                         resolve(event.target.result);
@@ -306,51 +321,102 @@
                         reject(event.target.error);
                     };
                 }
+
+                if(error !== null){
+                    resolve(undefined);
+                    reject(error);
+                }
             });
         } 
 
         async put(object, usePromise = false) {
             if (this.shouldProceed()) {
+                try {
+                    await this.instance.open(true);
+                    return await this._Put(object, usePromise);
+                } catch (error) {
+                    this.throwError(error);
+                }
+            } else {
+                return this.dbConError();
+            }
+        }
+        
+        async _Put(object, usePromise = false) {
+            const store = this.instance.getStore(this.baseTable, 'readwrite');
+            let passed = false;
+            let error = null;
+        
+            if (store === null) {
+                error = this.dbError();
+            } else if (!object.key) {
+                error = 'Cache key is missing or invalid';
+            } else {
+                object.key = this.toKey(object.key);
+        
+                try {
+                    const request = await store.put(object);
+                    passed = true;
+                } catch (err) {
+                    error = err;
+                    this.throwError(error);
+                }
+        
+                if (usePromise) {
+                    return new _global.Promise((resolve, reject) => {
+                        resolve(passed);
+                        if (error !== null) {
+                            reject(error);
+                        }
+                    });
+                }
+            }
+        
+            if (error !== null) {
+                this.logError(error);
+            }
+        
+            return passed;
+        }        
+
+        /*async put(object, usePromise = false) {
+            if (this.shouldProceed()) {
                 return this.instance.open(true)
-                    .then(() => this.privatePut(object, usePromise))
+                    .then(() => this._Put(object, usePromise))
                     .catch(error => {
                         this.throwError(error); 
                     });
             } else {
-                return this.databaseConnError();
+                return this.dbConError();
             }
         }
-
-        privatePut(object, usePromise = false) {
+        
+        _Put(object, usePromise = false) {
             const store = this.instance.getStore(this.baseTable, 'readwrite');
             let passed = false;
-            let request = null;
-            if (object.key && store != null){
+            let error = null;
+           
+            if(store === null){
+                error = this.dbError();
+            }else if(!object.key){
+                error = 'Cache key is missing or invalid';
+            }else{
                 object.key = this.toKey(object.key);
-                request = store.put(object);
-            }
+                const request = store.put(object);
+                if(usePromise){
+                    return new _global.Promise((resolve, reject) => {
+                        request.onsuccess = () => {
+                            resolve(true);
+                        };
+        
+                        request.onerror = (event) => {
+                            resolve(false);
+                            reject(event.target.error);
+                        };
+                    });
+                }
 
-            if(usePromise){
-                return new _global.Promise((resolve, reject) => {
-                    if (object.key) {
-                        if(store == null){
-                            reject(this.dbError());
-                        }else{
-                            request.onsuccess = () => {
-                                resolve(true);
-                            };
-                
-                            request.onerror = (event) => {
-                                reject(event.target.error);
-                            };
-                        }
-                    } else {
-                        reject('Cache key is missing or invalid');
-                    }
-                });
-            }
 
-            if (object.key && store != null){
                 request.onsuccess = () => {
                     passed = true;
                 };
@@ -360,30 +426,35 @@
                 };
             }
 
+            if(error !== null){
+                this.logError(error);
+            }
+
             return passed;
-        }
+        }*/
 
         delete() {
-
             if (this.shouldProceed()) {
                 return this.instance.open(true)
-                    .then(() => this.privateDelete())
+                    .then(() => this._Delete())
                     .catch(error => {
                         this.throwError(error); 
                     });
             } else {
-                return this.databaseConnError();
+                return this.dbConError();
             }
         }
 
-        privateDelete() {
+        _Delete() {
             return new _global.Promise((resolve, reject) => {
-                if (this.findKey == null) {
-                    reject("Cache key cannot be empty");
+                let error = null;
+                if (this.findKey === null) {
+                    error = "Cache key cannot be empty";
                 } else {
                     const store = this.instance.getStore(this.baseTable, 'readwrite');
+                   
                     if(store == null){
-                        reject(this.dbError());
+                        error = this.dbError();
                     }else{
                         let deleteRequest = null;
             
@@ -395,6 +466,7 @@
                             };
                 
                             deleteRequest.onerror = (event) => {
+                                resolve(false);
                                 reject(event.target.error);
                             };
                         } else {
@@ -413,16 +485,24 @@
                                     };
             
                                     deleteRequest.onerror = (error) => {
-                                        reject(error.target.error);
+                                        resolve(false);
+                                        reject(event.target.error);
                                     };
                                 } else {
+                                    resolve(false);
                                     reject('No matching record found');
                                 }
                             };
                         }
                     }
-        
-                    this.privateReset();
+                    
+                    this._Reset();
+                }
+
+                
+                if(error !== null){
+                    resolve(false);
+                    reject(error);
                 }
             });
         }
@@ -430,36 +510,37 @@
         clear() {
             if (this.shouldProceed()) {
                 return this.instance.open(true)
-                    .then(() => this.privateClear())
+                    .then(() => this._Clear())
                     .catch(error => {
                         this.throwError(error); 
                     });
             } else {
-                return this.databaseConnError();
+                return this.dbConError();
             }
         }
         
 
-        privateClear() {
+        _Clear() {
             return new _global.Promise((resolve, reject) => {
                 const store = this.instance.getStore(this.baseTable, 'readwrite');
                 if(store == null){
+                    resolve(false);
                     reject(this.dbError());
                 }else{
                     const request = store.clear();
-            
                     request.onsuccess = () => {
                         resolve(true);
                     };
             
                     request.onerror = (event) => {
+                        resolve(false);
                         reject(event.target.error);
                     };
                 }
             });
         }
 
-        databaseConnError(){
+        dbConError(){
             return _global.Promise.reject({
                 message: "Database is not open",
                 status: 500
@@ -494,7 +575,7 @@
             };
         }
         
-        privateReset(){
+        _Reset(){
             this.column = null;
             this.findKey = null;
         }
